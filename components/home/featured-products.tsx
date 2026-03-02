@@ -3,13 +3,20 @@
 import Link from "next/link"
 import { ArrowRight, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { products, formatPrice } from "@/lib/data"
+import { getFeaturedProducts, formatPrice, type Product } from "@/lib/data"
 import { useCart } from "@/lib/store"
 import { toast } from "sonner"
+import { useState, useEffect } from "react"
 
 export function FeaturedProducts() {
-  const featured = products.slice(0, 4)
+  const [featured, setFeatured] = useState<Product[]>([])
   const { addItem } = useCart()
+
+  useEffect(() => {
+    getFeaturedProducts(4)
+      .then(setFeatured)
+      .catch(() => toast.error("Failed to load products"))
+  }, [])
 
   return (
     <section className="border-t border-border bg-card py-20">
@@ -32,38 +39,42 @@ export function FeaturedProducts() {
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((product) => (
-            <div
-              key={product.id}
-              className="group flex flex-col rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40"
-            >
-              <div className="mb-4 flex h-40 items-center justify-center rounded-md bg-secondary">
-                <ShoppingCart className="h-10 w-10 text-muted-foreground/30" />
-              </div>
-              <span className="mb-1 text-xs font-medium uppercase tracking-wider text-primary">
-                {product.category}
-              </span>
-              <h3 className="mb-1 font-medium text-foreground">{product.name}</h3>
-              <p className="mb-4 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
-                {product.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-foreground">
-                  {formatPrice(product.price)}
-                </span>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    addItem(product.id)
-                    toast.success(`${product.name} added to cart`)
-                  }}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+          {featured.length === 0
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-64 animate-pulse rounded-lg border border-border bg-card" />
+              ))
+            : featured.map((product) => (
+                <div
+                  key={product.id}
+                  className="group flex flex-col rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40"
                 >
-                  Add to Cart
-                </Button>
-              </div>
-            </div>
-          ))}
+                  <div className="mb-4 flex h-40 items-center justify-center rounded-md bg-secondary">
+                    <ShoppingCart className="h-10 w-10 text-muted-foreground/30" />
+                  </div>
+                  <span className="mb-1 text-xs font-medium uppercase tracking-wider text-primary">
+                    {product.category}
+                  </span>
+                  <h3 className="mb-1 font-medium text-foreground">{product.name}</h3>
+                  <p className="mb-4 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+                    {product.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-foreground">
+                      {formatPrice(product.price)}
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        addItem(product.id)
+                        toast.success(`${product.name} added to cart`)
+                      }}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Add to Cart
+                    </Button>
+                  </div>
+                </div>
+              ))}
         </div>
         <div className="mt-8 text-center md:hidden">
           <Link

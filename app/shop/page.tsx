@@ -1,30 +1,46 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { SiteHeader, SiteFooter } from "@/components/site-layout"
-import { ShoppingCart, Search, Filter } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { products, getProductCategories, formatPrice } from "@/lib/data"
-import { useCart } from "@/lib/store"
-import { toast } from "sonner"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { SiteHeader, SiteFooter } from "@/components/site-layout";
+import { ShoppingCart, Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  getProducts,
+  getProductCategories,
+  formatPrice,
+  type Product,
+} from "@/lib/data";
+import { useCart } from "@/lib/store";
+import { toast } from "sonner";
 
 export default function ShopPage() {
-  const [search, setSearch] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { addItem } = useCart()
-  const categories = getProductCategories()
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { addItem } = useCart();
+
+  useEffect(() => {
+    Promise.all([getProducts(), getProductCategories()])
+      .then(([prods, cats]) => {
+        setProducts(prods);
+        setCategories(cats);
+      })
+      .catch(() => toast.error("Failed to load products"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(search.toLowerCase()) ||
-      product.description.toLowerCase().includes(search.toLowerCase())
+      (product.description ?? "").toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
-      !selectedCategory || product.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+      !selectedCategory || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -71,10 +87,21 @@ export default function ShopPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-64 animate-pulse rounded-lg border border-border bg-card"
+                />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Filter className="mb-4 h-12 w-12 text-muted-foreground/30" />
-              <h2 className="text-lg font-semibold text-foreground">No parts found</h2>
+              <h2 className="text-lg font-semibold text-foreground">
+                No parts found
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Try adjusting your search or filters.
               </p>
@@ -113,8 +140,8 @@ export default function ShopPage() {
                       size="sm"
                       disabled={product.stock === 0}
                       onClick={() => {
-                        addItem(product.id)
-                        toast.success(`${product.name} added to cart`)
+                        addItem(product.id);
+                        toast.success(`${product.name} added to cart`);
                       }}
                       className="bg-primary text-primary-foreground hover:bg-primary/90"
                     >
@@ -129,5 +156,5 @@ export default function ShopPage() {
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }

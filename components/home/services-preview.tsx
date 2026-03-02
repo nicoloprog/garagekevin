@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, Droplets, Disc, Cpu, RotateCcw, Settings2, Thermometer } from "lucide-react"
-import { services, formatPrice } from "@/lib/data"
+import { getServices, formatPrice } from "@/lib/data"
 
 const iconMap: Record<string, React.ElementType> = {
   "Oil Change": Droplets,
@@ -11,7 +11,9 @@ const iconMap: Record<string, React.ElementType> = {
   "AC Service & Repair": Thermometer,
 }
 
-export function ServicesPreview() {
+export async function ServicesPreview() {
+  const services = await getServices()
+
   return (
     <section className="bg-background py-20">
       <div className="mx-auto max-w-7xl px-4">
@@ -52,10 +54,10 @@ export function ServicesPreview() {
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-primary">
-                    From {formatPrice(service.basePrice)}
+                    From {formatPrice(service.base_price)}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    ~{service.durationMinutes} min
+                    ~{service.duration_minutes} min
                   </span>
                 </div>
               </Link>

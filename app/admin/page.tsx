@@ -1,18 +1,36 @@
-"use client"
+"use client";
 
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { DollarSign, ShoppingBag, Calendar, Package, TrendingUp, ArrowUpRight } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { orders, bookings, products, orderItems, formatPrice, getUserById, getServiceById, getVehicleById } from "@/lib/data"
-import Link from "next/link"
+import { AdminLayout } from "@/components/admin/admin-layout";
+import {
+  DollarSign,
+  ShoppingBag,
+  Calendar,
+  Package,
+  TrendingUp,
+  ArrowUpRight,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  orders,
+  bookings,
+  products,
+  orderItems,
+  formatPrice,
+  getUserById,
+  getServiceById,
+  getVehicleById,
+} from "@/lib/data";
+import Link from "next/link";
 
 export default function AdminDashboard() {
-  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
-  const totalOrders = orders.length
-  const totalBookings = bookings.length
-  const totalProducts = products.length
-  const pendingBookings = bookings.filter((b) => b.status === "PENDING").length
-  const activeOrders = orders.filter((o) => o.status === "PAID" || o.status === "SHIPPED").length
+  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalOrders = orders.length;
+  const totalBookings = bookings.length;
+  const totalProducts = products.length;
+  const pendingBookings = bookings.filter((b) => b.status === "PENDING").length;
+  const activeOrders = orders.filter(
+    (o) => o.status === "PAID" || o.status === "SHIPPED",
+  ).length;
 
   const metrics = [
     {
@@ -39,7 +57,7 @@ export default function AdminDashboard() {
       description: `${products.reduce((s, p) => s + p.stock, 0)} total stock`,
       icon: Package,
     },
-  ]
+  ];
 
   return (
     <AdminLayout>
@@ -62,8 +80,12 @@ export default function AdminDashboard() {
               <metric.icon className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{metric.value}</div>
-              <p className="mt-1 text-xs text-muted-foreground">{metric.description}</p>
+              <div className="text-2xl font-bold text-foreground">
+                {metric.value}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {metric.description}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -74,31 +96,46 @@ export default function AdminDashboard() {
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-foreground">Recent Bookings</CardTitle>
-            <Link href="/admin/bookings" className="flex items-center gap-1 text-xs text-primary hover:underline">
+            <Link
+              href="/admin/bookings"
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
               View all <ArrowUpRight className="h-3 w-3" />
             </Link>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3">
               {bookings.slice(0, 4).map((booking) => {
-                const user = getUserById(booking.userId)
-                const service = getServiceById(booking.serviceId)
+                const user = getUserById(booking.user_id);
+                const service = getServiceById(booking.service_id);
                 return (
-                  <div key={booking.id} className="flex items-center justify-between rounded-md bg-background px-3 py-2">
+                  <div
+                    key={booking.id}
+                    className="flex items-center justify-between rounded-md bg-background px-3 py-2"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-foreground">{user?.name}</p>
-                      <p className="text-xs text-muted-foreground">{service?.name}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {service?.name}
+                      </p>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      booking.status === "PENDING" ? "bg-chart-4/20 text-chart-4" :
-                      booking.status === "APPROVED" ? "bg-primary/20 text-primary" :
-                      booking.status === "COMPLETED" ? "bg-chart-3/20 text-chart-3" :
-                      "bg-secondary text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        booking.status === "PENDING"
+                          ? "bg-chart-4/20 text-chart-4"
+                          : booking.status === "APPROVED"
+                            ? "bg-primary/20 text-primary"
+                            : booking.status === "COMPLETED"
+                              ? "bg-chart-3/20 text-chart-3"
+                              : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
                       {booking.status}
                     </span>
                   </div>
-                )
+                );
               })}
             </div>
           </CardContent>
@@ -107,30 +144,45 @@ export default function AdminDashboard() {
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-foreground">Recent Orders</CardTitle>
-            <Link href="/admin/orders" className="flex items-center gap-1 text-xs text-primary hover:underline">
+            <Link
+              href="/admin/orders"
+              className="flex items-center gap-1 text-xs text-primary hover:underline"
+            >
               View all <ArrowUpRight className="h-3 w-3" />
             </Link>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3">
               {orders.map((order) => {
-                const user = getUserById(order.userId)
+                const user = getUserById(order.user_id);
                 return (
-                  <div key={order.id} className="flex items-center justify-between rounded-md bg-background px-3 py-2">
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between rounded-md bg-background px-3 py-2"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-foreground">{user?.name}</p>
-                      <p className="text-xs text-muted-foreground">{formatPrice(order.total)}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {user?.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatPrice(order.total)}
+                      </p>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      order.status === "COMPLETED" ? "bg-chart-3/20 text-chart-3" :
-                      order.status === "SHIPPED" ? "bg-chart-2/20 text-chart-2" :
-                      order.status === "PAID" ? "bg-primary/20 text-primary" :
-                      "bg-secondary text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        order.status === "COMPLETED"
+                          ? "bg-chart-3/20 text-chart-3"
+                          : order.status === "SHIPPED"
+                            ? "bg-chart-2/20 text-chart-2"
+                            : order.status === "PAID"
+                              ? "bg-primary/20 text-primary"
+                              : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
                       {order.status}
                     </span>
                   </div>
-                )
+                );
               })}
             </div>
           </CardContent>
@@ -150,10 +202,17 @@ export default function AdminDashboard() {
             {products
               .filter((p) => p.stock < 20)
               .map((product) => (
-                <div key={product.id} className="flex items-center justify-between rounded-md bg-background px-3 py-2">
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between rounded-md bg-background px-3 py-2"
+                >
                   <div>
-                    <p className="text-sm font-medium text-foreground">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">{product.category}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {product.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {product.category}
+                    </p>
                   </div>
                   <span className="text-sm font-semibold text-chart-5">
                     {product.stock} left
@@ -164,5 +223,5 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
     </AdminLayout>
-  )
+  );
 }

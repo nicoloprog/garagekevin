@@ -1,14 +1,25 @@
-import { SiteHeader, SiteFooter } from "@/components/site-layout"
-import { Droplets, Disc, Cpu, RotateCcw, Settings2, Thermometer, Clock, DollarSign } from "lucide-react"
-import { services, formatPrice } from "@/lib/data"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import type { Metadata } from "next"
+import { SiteHeader, SiteFooter } from "@/components/site-layout";
+import {
+  Droplets,
+  Disc,
+  Cpu,
+  RotateCcw,
+  Settings2,
+  Thermometer,
+  Clock,
+  DollarSign,
+} from "lucide-react";
+import { getServices, formatPrice } from "@/lib/data";
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Services",
-  description: "Professional auto repair services - oil changes, brake service, engine diagnostics, and more.",
-}
+  description:
+    "Professional auto repair services - oil changes, brake service, engine diagnostics, and more.",
+};
 
 const iconMap: Record<string, React.ElementType> = {
   "Oil Change": Droplets,
@@ -17,9 +28,11 @@ const iconMap: Record<string, React.ElementType> = {
   "Tire Rotation & Balance": RotateCcw,
   "Transmission Service": Settings2,
   "AC Service & Repair": Thermometer,
-}
+};
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const services = await getServices();
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -38,7 +51,7 @@ export default function ServicesPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
               {services.map((service) => {
-                const Icon = iconMap[service.name] || Settings2
+                const Icon = iconMap[service.name] || Settings2;
                 return (
                   <div
                     key={service.id}
@@ -57,16 +70,16 @@ export default function ServicesPage() {
                       <div className="mt-4 flex items-center gap-4">
                         <span className="inline-flex items-center gap-1 text-sm text-primary">
                           <DollarSign className="h-4 w-4" />
-                          From {formatPrice(service.basePrice)}
+                          From {formatPrice(service.base_price)}
                         </span>
                         <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          ~{service.durationMinutes} min
+                          <Clock className="h-4 w-4" />~
+                          {service.duration_minutes} min
                         </span>
                       </div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
 
@@ -89,5 +102,5 @@ export default function ServicesPage() {
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }

@@ -1,66 +1,117 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { SiteHeader, SiteFooter } from "@/components/site-layout"
-import { Calendar, Clock, Car, Wrench, CheckCircle2, ChevronRight, ChevronLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { services, formatPrice } from "@/lib/data"
-import { useAuth } from "@/lib/store"
-import { toast } from "sonner"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { useState, useEffect } from "react";
+import { SiteHeader, SiteFooter } from "@/components/site-layout";
+import {
+  Calendar,
+  Clock,
+  Car,
+  Wrench,
+  CheckCircle2,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  getServices,
+  createBooking,
+  formatPrice,
+  type Service,
+} from "@/lib/data";
+import { useAuth } from "@/lib/store";
+import { toast } from "sonner";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-const steps = ["Vehicle", "Service", "Schedule", "Confirm"]
+const steps = ["Vehicle", "Service", "Schedule", "Confirm"];
 
 const timeSlots = [
-  "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
-  "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM",
-]
+  "8:00 AM",
+  "9:00 AM",
+  "10:00 AM",
+  "11:00 AM",
+  "12:00 PM",
+  "1:00 PM",
+  "2:00 PM",
+  "3:00 PM",
+  "4:00 PM",
+];
 
 export default function BookingPage() {
-  const router = useRouter()
-  const { user } = useAuth()
-  const [step, setStep] = useState(0)
-  const [submitted, setSubmitted] = useState(false)
+  const { user, profile } = useAuth();
+  const [services, setServices] = useState<Service[]>([]);
+  const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
 
   // Vehicle info
-  const [make, setMake] = useState("")
-  const [model, setModel] = useState("")
-  const [year, setYear] = useState("")
-  const [vin, setVin] = useState("")
+  const [make, setMake] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
+  const [vin, setVin] = useState("");
 
   // Service selection
-  const [selectedService, setSelectedService] = useState<string | null>(null)
+  const [selectedService, setSelectedService] = useState<string | null>(null);
 
   // Scheduling
-  const [date, setDate] = useState("")
-  const [time, setTime] = useState("")
-  const [notes, setNotes] = useState("")
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const selectedServiceData = services.find((s) => s.id === selectedService)
+  useEffect(() => {
+    getServices()
+      .then(setServices)
+      .catch(() => toast.error("Failed to load services"));
+  }, []);
+
+  const selectedServiceData = services.find((s) => s.id === selectedService);
 
   const canProceed = (): boolean => {
     switch (step) {
       case 0:
-        return make.trim() !== "" && model.trim() !== "" && year.trim() !== ""
+        return make.trim() !== "" && model.trim() !== "" && year.trim() !== "";
       case 1:
-        return selectedService !== null
+        return selectedService !== null;
       case 2:
-        return date !== "" && time !== ""
+        return date !== "" && time !== "";
       default:
-        return true
+        return true;
     }
-  }
+  };
 
-  const handleSubmit = () => {
-    setSubmitted(true)
-    toast.success("Booking submitted successfully!")
-  }
+  const handleSubmit = async () => {
+    if (!user || !selectedService) return;
+    try {
+      const scheduledAt = new Date(`${date} ${time}`).toISOString();
+      await createBooking({
+        user_id: user.id,
+        vehicle_id: "", // set if you have vehicle IDs saved
+        service_id: selectedService,
+        scheduled_at: scheduledAt,
+        status: "PENDING",
+        notes: notes || null,
+      });
+      setSubmitted(true);
+      toast.success("Booking submitted successfully!");
+    } catch {
+      toast.error("Failed to submit booking. Please try again.");
+    }
+  };
+
+  const resetForm = () => {
+    setSubmitted(false);
+    setStep(0);
+    setMake("");
+    setModel("");
+    setYear("");
+    setVin("");
+    setSelectedService(null);
+    setDate("");
+    setTime("");
+    setNotes("");
+  };
 
   if (!user) {
     return (
@@ -82,7 +133,7 @@ export default function BookingPage() {
         </main>
         <SiteFooter />
       </div>
-    )
+    );
   }
 
   if (submitted) {
@@ -97,18 +148,22 @@ export default function BookingPage() {
             Booking Confirmed
           </h1>
           <p className="mt-2 max-w-md text-muted-foreground">
-            Your {selectedServiceData?.name} appointment has been submitted.
-            We will confirm your booking shortly.
+            Your {selectedServiceData?.name} appointment has been submitted. We
+            will confirm your booking shortly.
           </p>
           <div className="mt-6 rounded-lg border border-border bg-card p-6 text-left">
             <div className="grid gap-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Vehicle</span>
-                <span className="font-medium text-foreground">{year} {make} {model}</span>
+                <span className="font-medium text-foreground">
+                  {year} {make} {model}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Service</span>
-                <span className="font-medium text-foreground">{selectedServiceData?.name}</span>
+                <span className="font-medium text-foreground">
+                  {selectedServiceData?.name}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date</span>
@@ -120,29 +175,23 @@ export default function BookingPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Estimated Cost</span>
-                <span className="font-medium text-primary">{formatPrice(selectedServiceData?.basePrice ?? 0)}</span>
+                <span className="font-medium text-primary">
+                  {formatPrice(selectedServiceData?.base_price ?? 0)}
+                </span>
               </div>
             </div>
           </div>
           <div className="mt-6 flex gap-3">
             <Link href="/">
-              <Button variant="outline" className="border-border text-foreground">
+              <Button
+                variant="outline"
+                className="border-border text-foreground"
+              >
                 Back to Home
               </Button>
             </Link>
             <Button
-              onClick={() => {
-                setSubmitted(false)
-                setStep(0)
-                setMake("")
-                setModel("")
-                setYear("")
-                setVin("")
-                setSelectedService(null)
-                setDate("")
-                setTime("")
-                setNotes("")
-              }}
+              onClick={resetForm}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Book Another
@@ -151,7 +200,7 @@ export default function BookingPage() {
         </main>
         <SiteFooter />
       </div>
-    )
+    );
   }
 
   return (
@@ -178,7 +227,7 @@ export default function BookingPage() {
                         ? "bg-primary text-primary-foreground"
                         : i === step
                           ? "border-2 border-primary bg-primary/10 text-primary"
-                          : "border border-border bg-card text-muted-foreground"
+                          : "border border-border bg-card text-muted-foreground",
                     )}
                   >
                     {i < step ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
@@ -191,7 +240,7 @@ export default function BookingPage() {
                   <div
                     className={cn(
                       "mb-4 h-0.5 flex-1 sm:mb-5",
-                      i < step ? "bg-primary" : "bg-border"
+                      i < step ? "bg-primary" : "bg-border",
                     )}
                   />
                 )}
@@ -207,26 +256,62 @@ export default function BookingPage() {
                   <Car className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">Vehicle Information</h2>
-                  <p className="text-sm text-muted-foreground">Tell us about your vehicle</p>
+                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">
+                    Vehicle Information
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Tell us about your vehicle
+                  </p>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="make" className="text-foreground">Make *</Label>
-                  <Input id="make" placeholder="e.g. Ford" value={make} onChange={(e) => setMake(e.target.value)} className="bg-background" />
+                  <Label htmlFor="make" className="text-foreground">
+                    Make *
+                  </Label>
+                  <Input
+                    id="make"
+                    placeholder="e.g. Ford"
+                    value={make}
+                    onChange={(e) => setMake(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="model" className="text-foreground">Model *</Label>
-                  <Input id="model" placeholder="e.g. F-150" value={model} onChange={(e) => setModel(e.target.value)} className="bg-background" />
+                  <Label htmlFor="model" className="text-foreground">
+                    Model *
+                  </Label>
+                  <Input
+                    id="model"
+                    placeholder="e.g. F-150"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="year" className="text-foreground">Year *</Label>
-                  <Input id="year" placeholder="e.g. 2022" value={year} onChange={(e) => setYear(e.target.value)} className="bg-background" />
+                  <Label htmlFor="year" className="text-foreground">
+                    Year *
+                  </Label>
+                  <Input
+                    id="year"
+                    placeholder="e.g. 2022"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="vin" className="text-foreground">VIN (Optional)</Label>
-                  <Input id="vin" placeholder="Vehicle Identification Number" value={vin} onChange={(e) => setVin(e.target.value)} className="bg-background" />
+                  <Label htmlFor="vin" className="text-foreground">
+                    VIN (Optional)
+                  </Label>
+                  <Input
+                    id="vin"
+                    placeholder="Vehicle Identification Number"
+                    value={vin}
+                    onChange={(e) => setVin(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
               </div>
             </div>
@@ -240,8 +325,12 @@ export default function BookingPage() {
                   <Wrench className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">Select a Service</h2>
-                  <p className="text-sm text-muted-foreground">Choose the service you need</p>
+                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">
+                    Select a Service
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Choose the service you need
+                  </p>
                 </div>
               </div>
               <div className="grid gap-3">
@@ -253,14 +342,20 @@ export default function BookingPage() {
                       "flex items-center justify-between rounded-lg border p-4 text-left transition-colors",
                       selectedService === service.id
                         ? "border-primary bg-primary/5"
-                        : "border-border bg-background hover:border-primary/40"
+                        : "border-border bg-background hover:border-primary/40",
                     )}
                   >
                     <div>
-                      <h3 className="font-medium text-foreground">{service.name}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">~{service.durationMinutes} min</p>
+                      <h3 className="font-medium text-foreground">
+                        {service.name}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        ~{service.duration_minutes} min
+                      </p>
                     </div>
-                    <span className="font-semibold text-primary">{formatPrice(service.basePrice)}</span>
+                    <span className="font-semibold text-primary">
+                      {formatPrice(service.base_price)}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -275,14 +370,26 @@ export default function BookingPage() {
                   <Clock className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">Schedule Appointment</h2>
-                  <p className="text-sm text-muted-foreground">Choose your preferred date and time</p>
+                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">
+                    Schedule Appointment
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Choose your preferred date and time
+                  </p>
                 </div>
               </div>
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="date" className="text-foreground">Preferred Date *</Label>
-                  <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-background" />
+                  <Label htmlFor="date" className="text-foreground">
+                    Preferred Date *
+                  </Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-foreground">Preferred Time *</Label>
@@ -295,7 +402,7 @@ export default function BookingPage() {
                           "rounded-md border px-3 py-2 text-sm transition-colors",
                           time === slot
                             ? "border-primary bg-primary/10 text-primary"
-                            : "border-border bg-background text-muted-foreground hover:border-primary/40"
+                            : "border-border bg-background text-muted-foreground hover:border-primary/40",
                         )}
                       >
                         {slot}
@@ -304,7 +411,9 @@ export default function BookingPage() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="notes" className="text-foreground">Additional Notes (Optional)</Label>
+                  <Label htmlFor="notes" className="text-foreground">
+                    Additional Notes (Optional)
+                  </Label>
                   <Textarea
                     id="notes"
                     placeholder="Describe any specific issues or requests..."
@@ -325,30 +434,44 @@ export default function BookingPage() {
                   <CheckCircle2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">Confirm Your Booking</h2>
-                  <p className="text-sm text-muted-foreground">Review the details below</p>
+                  <h2 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-foreground">
+                    Confirm Your Booking
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Review the details below
+                  </p>
                 </div>
               </div>
               <div className="grid gap-4 text-sm">
                 <div className="flex justify-between rounded-md bg-background px-4 py-3">
                   <span className="text-muted-foreground">Customer</span>
-                  <span className="font-medium text-foreground">{user.name}</span>
+                  <span className="font-medium text-foreground">
+                    {profile?.name ?? user.email}
+                  </span>
                 </div>
                 <div className="flex justify-between rounded-md bg-background px-4 py-3">
                   <span className="text-muted-foreground">Vehicle</span>
-                  <span className="font-medium text-foreground">{year} {make} {model}</span>
+                  <span className="font-medium text-foreground">
+                    {year} {make} {model}
+                  </span>
                 </div>
                 <div className="flex justify-between rounded-md bg-background px-4 py-3">
                   <span className="text-muted-foreground">Service</span>
-                  <span className="font-medium text-foreground">{selectedServiceData?.name}</span>
+                  <span className="font-medium text-foreground">
+                    {selectedServiceData?.name}
+                  </span>
                 </div>
                 <div className="flex justify-between rounded-md bg-background px-4 py-3">
                   <span className="text-muted-foreground">Date & Time</span>
-                  <span className="font-medium text-foreground">{date} at {time}</span>
+                  <span className="font-medium text-foreground">
+                    {date} at {time}
+                  </span>
                 </div>
                 <div className="flex justify-between rounded-md bg-background px-4 py-3">
                   <span className="text-muted-foreground">Estimated Cost</span>
-                  <span className="font-bold text-primary">{formatPrice(selectedServiceData?.basePrice ?? 0)}</span>
+                  <span className="font-bold text-primary">
+                    {formatPrice(selectedServiceData?.base_price ?? 0)}
+                  </span>
                 </div>
                 {notes && (
                   <div className="rounded-md bg-background px-4 py-3">
@@ -393,5 +516,5 @@ export default function BookingPage() {
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }

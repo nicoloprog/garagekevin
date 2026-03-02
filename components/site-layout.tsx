@@ -7,11 +7,11 @@ import {
   Wrench,
   ShoppingCart,
   Menu,
-  X,
-  User,
+  User as UserIcon,
   LogOut,
   LayoutDashboard,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { useAuth, useCart } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,7 @@ const navLinks = [
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout, loading } = useAuth();
   const { getItemCount } = useCart();
   const [open, setOpen] = useState(false);
   const itemCount = getItemCount();
@@ -46,15 +47,17 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
             <Wrench className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold tracking-tight text-foreground">
-            RemorquageLourd
+            RemorquageKD
           </span>
         </Link>
 
+        {/* Desktop Nav */}
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
@@ -73,6 +76,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Cart Button */}
           <Link href="/shop/cart" className="relative">
             <Button
               variant="ghost"
@@ -80,77 +84,99 @@ export function SiteHeader() {
               className="text-muted-foreground hover:text-foreground"
             >
               <ShoppingCart className="h-5 w-5" />
-              <span className="sr-only">Cart</span>
+              {itemCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {itemCount}
+                </span>
+              )}
             </Button>
-            {itemCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                {itemCount}
-              </span>
-            )}
           </Link>
 
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <User className="h-5 w-5" />
-                  <span className="sr-only">User menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium text-foreground">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+          {!loading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <UserIcon className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium truncate">
+                        {user.name || "User"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <DropdownMenuSeparator />
+
+                    {/* ADMIN DASHBOARD LINK */}
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/admin"
+                          className="flex w-full items-center gap-2 cursor-pointer"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/account"
+                        className="flex w-full items-center gap-2 cursor-pointer"
+                      >
+                        <UserIcon className="h-4 w-4" />
+                        <span>My Account</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => logout()}
+                      className="text-destructive cursor-pointer focus:text-destructive"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hidden sm:inline-flex"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm">Get Started</Button>
+                  </Link>
                 </div>
-                <DropdownMenuSeparator />
-                {user.role === "ADMIN" && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin" className="flex items-center gap-2">
-                      <LayoutDashboard className="h-4 w-4" />
-                      Admin Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="flex items-center gap-2 text-destructive-foreground"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Sign In
-              </Button>
-            </Link>
+              )}
+            </>
           )}
 
+          {/* Mobile Menu */}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground md:hidden"
-              >
+              <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 bg-background">
-              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <SheetContent side="right">
+              <SheetTitle className="text-left">Menu</SheetTitle>
               <div className="flex flex-col gap-4 pt-8">
                 {navLinks.map((link) => (
                   <Link
@@ -158,23 +184,52 @@ export function SiteHeader() {
                     href={link.href}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "text-sm font-medium transition-colors hover:text-primary",
                       pathname === link.href
-                        ? "bg-secondary text-primary"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                        ? "text-primary"
+                        : "text-muted-foreground",
                     )}
                   >
                     {link.label}
                   </Link>
                 ))}
-                {user?.role === "ADMIN" && (
+
+                <hr className="my-2 border-border" />
+
+                {/* MOBILE ADMIN DASHBOARD LINK */}
+                {isAdmin && (
                   <Link
                     href="/admin"
                     onClick={() => setOpen(false)}
-                    className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary"
                   >
+                    <LayoutDashboard className="h-4 w-4" />
                     Admin Dashboard
                   </Link>
+                )}
+
+                {user ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      logout();
+                      setOpen(false);
+                    }}
+                    className="justify-start px-0 text-destructive hover:bg-transparent"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" /> Sign Out
+                  </Button>
+                ) : (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <Link href="/login" onClick={() => setOpen(false)}>
+                      <Button variant="outline" className="w-full">
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link href="/register" onClick={() => setOpen(false)}>
+                      <Button className="w-full">Create Account</Button>
+                    </Link>
+                  </div>
                 )}
               </div>
             </SheetContent>
@@ -188,104 +243,8 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-card">
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-                <Wrench className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-bold text-foreground">
-                IronWorks
-              </span>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Professional auto repair and premium parts. Trusted by drivers
-              since 2015.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground">
-              Services
-            </h3>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>
-                <Link
-                  href="/services"
-                  className="hover:text-primary transition-colors"
-                >
-                  Oil Change
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services"
-                  className="hover:text-primary transition-colors"
-                >
-                  Brake Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services"
-                  className="hover:text-primary transition-colors"
-                >
-                  Engine Diagnostics
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services"
-                  className="hover:text-primary transition-colors"
-                >
-                  Transmission
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground">
-              Company
-            </h3>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/" className="hover:text-primary transition-colors">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop"
-                  className="hover:text-primary transition-colors"
-                >
-                  Parts Shop
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/booking"
-                  className="hover:text-primary transition-colors"
-                >
-                  Book a Service
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground">
-              Contact
-            </h3>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>123 Workshop Lane</li>
-              <li>Detroit, MI 48201</li>
-              <li>(313) 555-0199</li>
-              <li>info@ironworks.com</li>
-            </ul>
-          </div>
-        </div>
-        <div className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-          2026 IronWorks Auto. All rights reserved.
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-12 text-center text-sm text-muted-foreground">
+        © 2026 RemorquageKD. All rights reserved.
       </div>
     </footer>
   );
