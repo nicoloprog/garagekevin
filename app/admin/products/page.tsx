@@ -1,56 +1,73 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { AdminLayout } from "@/components/admin/admin-layout"
-import { products as initialProducts, getProductCategories, formatPrice } from "@/lib/data"
-import type { Product } from "@/lib/data"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Pencil, Trash2, Package } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react";
+import { AdminLayout } from "@/components/admin/admin-layout";
+import {
+  products as initialProducts,
+  getProductCategories,
+  formatPrice,
+} from "@/lib/data";
+import type { Product } from "@/lib/data";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Pencil, Trash2, Package } from "lucide-react";
+import { toast } from "sonner";
 
-export default function AdminProductsPage() {
-  const [productsList, setProductsList] = useState<Product[]>(initialProducts)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const categories = getProductCategories()
+export const dynamic = "force-dynamic";
+export default async function AdminProductsPage() {
+  const [productsList, setProductsList] = useState<Product[]>(initialProducts);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const categories = getProductCategories();
 
   // Form state
-  const [formName, setFormName] = useState("")
-  const [formDescription, setFormDescription] = useState("")
-  const [formPrice, setFormPrice] = useState("")
-  const [formStock, setFormStock] = useState("")
-  const [formCategory, setFormCategory] = useState("")
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formPrice, setFormPrice] = useState("");
+  const [formStock, setFormStock] = useState("");
+  const [formCategory, setFormCategory] = useState("");
 
   const openCreateDialog = () => {
-    setEditingProduct(null)
-    setFormName("")
-    setFormDescription("")
-    setFormPrice("")
-    setFormStock("")
-    setFormCategory("")
-    setIsDialogOpen(true)
-  }
+    setEditingProduct(null);
+    setFormName("");
+    setFormDescription("");
+    setFormPrice("");
+    setFormStock("");
+    setFormCategory("");
+    setIsDialogOpen(true);
+  };
 
   const openEditDialog = (product: Product) => {
-    setEditingProduct(product)
-    setFormName(product.name)
-    setFormDescription(product.description)
-    setFormPrice(product.price.toString())
-    setFormStock(product.stock.toString())
-    setFormCategory(product.category)
-    setIsDialogOpen(true)
-  }
+    setEditingProduct(product);
+    setFormName(product.name);
+    // setFormDescription(product.description);
+    setFormPrice(product.price.toString());
+    setFormStock(product.stock.toString());
+    // setFormCategory(product.category);
+    setIsDialogOpen(true);
+  };
 
   const handleSave = () => {
     if (!formName || !formPrice || !formStock || !formCategory) {
-      toast.error("Please fill in all required fields")
-      return
+      toast.error("Please fill in all required fields");
+      return;
     }
 
     if (editingProduct) {
@@ -66,10 +83,10 @@ export default function AdminProductsPage() {
                 category: formCategory,
                 updatedAt: new Date().toISOString(),
               }
-            : p
-        )
-      )
-      toast.success("Product updated")
+            : p,
+        ),
+      );
+      toast.success("Product updated");
     } else {
       const newProduct: Product = {
         id: `p${Date.now()}`,
@@ -79,19 +96,19 @@ export default function AdminProductsPage() {
         stock: parseInt(formStock),
         category: formCategory,
         images: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      setProductsList((prev) => [newProduct, ...prev])
-      toast.success("Product created")
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setProductsList((prev) => [newProduct, ...prev]);
+      toast.success("Product created");
     }
-    setIsDialogOpen(false)
-  }
+    setIsDialogOpen(false);
+  };
 
   const handleDelete = (id: string) => {
-    setProductsList((prev) => prev.filter((p) => p.id !== id))
-    toast.success("Product deleted")
-  }
+    setProductsList((prev) => prev.filter((p) => p.id !== id));
+    toast.success("Product deleted");
+  };
 
   return (
     <AdminLayout>
@@ -106,7 +123,10 @@ export default function AdminProductsPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              onClick={openCreateDialog}
+              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               <Plus className="h-4 w-4" />
               Add Product
             </Button>
@@ -120,20 +140,39 @@ export default function AdminProductsPage() {
             <div className="grid gap-4 py-4">
               <div className="flex flex-col gap-2">
                 <Label className="text-foreground">Name *</Label>
-                <Input value={formName} onChange={(e) => setFormName(e.target.value)} className="bg-background" />
+                <Input
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="bg-background"
+                />
               </div>
               <div className="flex flex-col gap-2">
                 <Label className="text-foreground">Description</Label>
-                <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="bg-background" />
+                <Textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="bg-background"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label className="text-foreground">Price *</Label>
-                  <Input type="number" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="bg-background" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-foreground">Stock *</Label>
-                  <Input type="number" value={formStock} onChange={(e) => setFormStock(e.target.value)} className="bg-background" />
+                  <Input
+                    type="number"
+                    value={formStock}
+                    onChange={(e) => setFormStock(e.target.value)}
+                    className="bg-background"
+                  />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
@@ -143,15 +182,20 @@ export default function AdminProductsPage() {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {(await categories).map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
                     ))}
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              onClick={handleSave}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               {editingProduct ? "Save Changes" : "Create Product"}
             </Button>
           </DialogContent>
@@ -173,35 +217,59 @@ export default function AdminProductsPage() {
             </thead>
             <tbody>
               {productsList.map((product) => (
-                <tr key={product.id} className="border-b border-border last:border-0">
+                <tr
+                  key={product.id}
+                  className="border-b border-border last:border-0"
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary">
                         <Package className="h-4 w-4 text-muted-foreground/50" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{product.name}</p>
-                        <p className="max-w-xs truncate text-xs text-muted-foreground">{product.description}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {product.name}
+                        </p>
+                        <p className="max-w-xs truncate text-xs text-muted-foreground">
+                          {product.description}
+                        </p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground">{product.category}</Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-secondary text-secondary-foreground"
+                    >
+                      {product.category}
+                    </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-foreground">
                     {formatPrice(product.price)}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-sm font-medium ${product.stock < 10 ? "text-chart-5" : "text-foreground"}`}>
+                    <span
+                      className={`text-sm font-medium ${product.stock < 10 ? "text-chart-5" : "text-foreground"}`}
+                    >
                       {product.stock}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditDialog(product)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => openEditDialog(product)}
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(product.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(product.id)}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -215,24 +283,50 @@ export default function AdminProductsPage() {
         {/* Mobile Cards */}
         <div className="flex flex-col gap-3 p-4 lg:hidden">
           {productsList.map((product) => (
-            <div key={product.id} className="rounded-md border border-border bg-background p-4">
+            <div
+              key={product.id}
+              className="rounded-md border border-border bg-background p-4"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-foreground">{product.name}</p>
-                  <Badge variant="secondary" className="mt-1 bg-secondary text-secondary-foreground">{product.category}</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="mt-1 bg-secondary text-secondary-foreground"
+                  >
+                    {product.category}
+                  </Badge>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => openEditDialog(product)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground"
+                    onClick={() => openEditDialog(product)}
+                  >
                     <Pencil className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(product.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDelete(product.id)}
+                  >
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="font-semibold text-foreground">{formatPrice(product.price)}</span>
-                <span className={product.stock < 10 ? "text-chart-5" : "text-muted-foreground"}>
+                <span className="font-semibold text-foreground">
+                  {formatPrice(product.price)}
+                </span>
+                <span
+                  className={
+                    product.stock < 10
+                      ? "text-chart-5"
+                      : "text-muted-foreground"
+                  }
+                >
                   {product.stock} in stock
                 </span>
               </div>
@@ -247,5 +341,5 @@ export default function AdminProductsPage() {
         )}
       </div>
     </AdminLayout>
-  )
+  );
 }
