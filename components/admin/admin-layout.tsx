@@ -20,7 +20,7 @@ const adminNav = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
 ];
 
-export function AdminLayout({ children }: { children: React.ReactNode }) {
+export async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const pathname = usePathname();
 

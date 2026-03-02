@@ -53,6 +53,10 @@ export function getUserById(id: string) {
   return { name: "Client User", email: "user@example.com" };
 }
 
+export async function getProductById(id: string) {
+  return (await getProducts()).find((p) => p.id === id) ?? null;
+}
+
 export function getServiceById(id: string) {
   const services = [
     { id: "1", name: "Towing" },
