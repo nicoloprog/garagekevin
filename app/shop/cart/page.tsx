@@ -1,25 +1,24 @@
-"use client"
+"use client";
 
-import { SiteHeader, SiteFooter } from "@/components/site-layout"
-import { ShoppingCart, Minus, Plus, Trash2, ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { useCart } from "@/lib/store"
-import { getProductById, formatPrice } from "@/lib/data"
-import Link from "next/link"
-import { toast } from "sonner"
+import { SiteHeader, SiteFooter } from "@/components/site-layout";
+import { ShoppingCart, Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { useCart } from "@/lib/store";
+import { formatPrice, CartItem } from "@/lib/data";
+import Link from "next/link";
+import { toast } from "sonner";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCart()
+  // ✅ Use the Cart context
+  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCart();
 
-  const cartProducts = items
-    .map((item) => {
-      const product = getProductById(item.productId)
-      return product ? { ...product, quantity: item.quantity } : null
-    })
-    .filter(Boolean) as (ReturnType<typeof getProductById> & { quantity: number })[]
+  const total = getTotal();
 
-  const total = getTotal()
+  const cartProducts = items.map((item: CartItem) => ({
+    ...item.product!,
+    quantity: item.quantity,
+  }));
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -35,8 +34,8 @@ export default function CartPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  clearCart()
-                  toast.success("Cart cleared")
+                  clearCart();
+                  toast.success("Cart cleared");
                 }}
                 className="text-muted-foreground hover:text-destructive"
               >
@@ -66,16 +65,18 @@ export default function CartPage() {
               <div className="flex flex-col gap-4">
                 {cartProducts.map((product) => (
                   <div
-                    key={product!.id}
+                    key={product.id}
                     className="flex items-center gap-4 rounded-lg border border-border bg-card p-4"
                   >
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
                       <ShoppingCart className="h-6 w-6 text-muted-foreground/30" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-foreground">{product!.name}</h3>
+                      <h3 className="font-medium text-foreground">
+                        {product.name}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        {formatPrice(product!.price)} each
+                        {formatPrice(product.price)} each
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -84,20 +85,20 @@ export default function CartPage() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() =>
-                          updateQuantity(product!.id, product!.quantity - 1)
+                          updateQuantity(product.id, product.quantity - 1)
                         }
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
                       <span className="w-8 text-center text-sm font-medium text-foreground">
-                        {product!.quantity}
+                        {product.quantity}
                       </span>
                       <Button
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
                         onClick={() =>
-                          updateQuantity(product!.id, product!.quantity + 1)
+                          updateQuantity(product.id, product.quantity + 1)
                         }
                       >
                         <Plus className="h-3 w-3" />
@@ -105,15 +106,15 @@ export default function CartPage() {
                     </div>
                     <div className="w-20 text-right">
                       <span className="font-semibold text-foreground">
-                        {formatPrice(product!.price * product!.quantity)}
+                        {formatPrice(product.price * product.quantity)}
                       </span>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        removeItem(product!.id)
-                        toast.success(`${product!.name} removed from cart`)
+                        removeItem(product.id);
+                        toast.success(`${product.name} removed from cart`);
                       }}
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     >
@@ -127,7 +128,9 @@ export default function CartPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm text-muted-foreground">Subtotal</span>
+                  <span className="text-sm text-muted-foreground">
+                    Subtotal
+                  </span>
                   <p className="text-2xl font-bold text-foreground">
                     {formatPrice(total)}
                   </p>
@@ -135,8 +138,8 @@ export default function CartPage() {
                 <Button
                   size="lg"
                   onClick={() => {
-                    clearCart()
-                    toast.success("Order placed successfully! (Demo)")
+                    clearCart();
+                    toast.success("Order placed successfully! (Demo)");
                   }}
                   className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
@@ -157,5 +160,5 @@ export default function CartPage() {
       </main>
       <SiteFooter />
     </div>
-  )
+  );
 }

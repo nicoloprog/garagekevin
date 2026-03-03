@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { CartItem, Product } from "@/lib/supabase/types";
+import { toast } from "sonner";
 
 // ─── AUTH LOGIC ─────────────────────────────────────────────────────────────
 
@@ -40,8 +41,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-// ─── SECURITY HELPERS ────────────────────────────────────────────────────────
-
+// Password & Email Helpers
 const PASSWORD_RULES = {
   minLength: 8,
   hasUppercase: /[A-Z]/,
@@ -50,10 +50,7 @@ const PASSWORD_RULES = {
   hasSpecial: /[!@#$%^&*(),.?":{}|<>]/,
 };
 
-function validatePassword(password: string): {
-  valid: boolean;
-  message: string;
-} {
+function validatePassword(password: string) {
   if (password.length < PASSWORD_RULES.minLength)
     return { valid: false, message: "Password must be at least 8 characters." };
   if (!PASSWORD_RULES.hasUppercase.test(password))
@@ -79,17 +76,18 @@ function validatePassword(password: string): {
   return { valid: true, message: "" };
 }
 
-function validateEmail(email: string): boolean {
+function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function sanitizeName(name: string): string {
+function sanitizeName(name: string) {
   return name
     .replace(/<[^>]*>/g, "")
     .trim()
     .slice(0, 64);
 }
 
+// Rate limiting
 const registerAttempts = new Map<
   string,
   { count: number; lastAttempt: number }
@@ -97,7 +95,7 @@ const registerAttempts = new Map<
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
-function isRateLimited(email: string): boolean {
+function isRateLimited(email: string) {
   const now = Date.now();
   const entry = registerAttempts.get(email);
   if (!entry) return false;
@@ -119,9 +117,8 @@ function trackAttempt(email: string) {
   }
 }
 
-// ─── REDIRECT HELPER ─────────────────────────────────────────────────────────
-
-function resolveRedirect(isAdmin: boolean): string {
+// Redirect helper
+function resolveRedirect(isAdmin: boolean) {
   return isAdmin ? "/admin" : "/shop";
 }
 
@@ -134,18 +131,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const formatUser = (supabaseUser: User | null): CustomUser | null => {
     if (!supabaseUser) return null;
-
-    // ✅ Accessing the Binary is_admin bit
-    // Priority: app_metadata (system) > user_metadata (fallback)
     const isAdminFlag = !!(
       supabaseUser.app_metadata?.is_admin ||
       supabaseUser.user_metadata?.is_admin
     );
-
     const rawRole = supabaseUser.app_metadata?.role || "CUSTOMER";
     const normalizedRole =
       typeof rawRole === "string" ? rawRole.toUpperCase() : "CUSTOMER";
-
     return {
       ...supabaseUser,
       name:
@@ -157,16 +149,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const isAdmin = !!user?.isAdmin;
-
   useEffect(() => {
-    // Check session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(formatUser(session?.user ?? null));
       setLoading(false);
     });
 
-    // Listen for Auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -174,22 +162,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(formatted);
       setLoading(false);
 
-      if (event === "SIGNED_IN" && formatted) {
+      if (event === "SIGNED_IN" && formatted)
         router.push(resolveRedirect(formatted.isAdmin));
-      }
-
-      if (event === "SIGNED_OUT") {
-        router.push("/");
-      }
+      if (event === "SIGNED_OUT") router.push("/");
     });
 
     return () => subscription.unsubscribe();
   }, [router]);
 
-  const login = async (
-    email: string,
-    password: string,
-  ): Promise<{ success: boolean; message: string }> => {
+  const login = async (email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase();
     if (!validateEmail(cleanEmail))
       return { success: false, message: "Invalid email." };
@@ -204,15 +185,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: cleanEmail,
         password,
       });
-
-      if (error) {
-        setLoading(false);
-        return { success: false, message: "Invalid credentials." };
-      }
+      if (error) return { success: false, message: "Invalid credentials." };
       return { success: true, message: "Welcome back!" };
-    } catch (err) {
-      setLoading(false);
+    } catch {
       return { success: false, message: "Unexpected error during login." };
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -221,27 +199,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     name: string,
     confirmPassword: string,
-  ): Promise<{ success: boolean; message: string }> => {
+  ) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = sanitizeName(name);
 
-    // Validate email
     if (!validateEmail(cleanEmail))
       return { success: false, message: "Invalid email address." };
-
-    // Validate name
     if (cleanName.length < 2)
       return { success: false, message: "Name is too short." };
-
-    // Validate password match
     if (password !== confirmPassword)
       return { success: false, message: "Passwords do not match." };
-
-    // Strong password validation
     const passwordCheck = validatePassword(password);
     if (!passwordCheck.valid)
       return { success: false, message: passwordCheck.message };
-
     if (isRateLimited(cleanEmail))
       return { success: false, message: "Too many attempts. Try again later." };
 
@@ -249,35 +219,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      // 🔥 Minimal signup — no metadata for now
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
-        options: {
-          data: {
-            name: cleanName,
-          },
-        },
+        options: { data: { name: cleanName } },
       });
-
-      if (error) {
-        setLoading(false);
-        return { success: false, message: error.message };
-      }
-
-      setLoading(false);
-
+      if (error) return { success: false, message: error.message };
       return {
         success: true,
         message:
           "Account created successfully. Check your email to verify your account.",
       };
-    } catch (err) {
+    } catch {
+      return { success: false, message: "Unexpected registration error." };
+    } finally {
       setLoading(false);
-      return {
-        success: false,
-        message: "Unexpected registration error.",
-      };
     }
   };
 
@@ -290,7 +246,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isAdmin, loading, login, register, logout }}
+      value={{
+        user,
+        isAdmin: !!user?.isAdmin,
+        loading,
+        login,
+        register,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -301,12 +264,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (productId: string, quantity?: number) => void;
+  addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
+  products: Product[];
+  vehicle: { make: string; model: string; year: string } | null;
+  setVehicle: (v: { make: string; model: string; year: string } | null) => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -314,55 +280,98 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [vehicle, setVehicle] = useState<{
+    make: string;
+    model: string;
+    year: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data } = await supabase.from("products").select("*");
-      if (data) setProducts(data);
-    };
-    fetchProducts();
-  }, []);
+      try {
+        let data: Product[] = [];
 
-  const addItem = useCallback((productId: string, quantity: number = 1) => {
+        if (vehicle) {
+          try {
+            const res = await fetch(
+              `/api/vehicle-parts?make=${vehicle.make}&model=${vehicle.model}&year=${vehicle.year}`,
+            );
+
+            if (!res.ok) {
+              throw new Error("Vehicle API failed");
+            }
+
+            data = await res.json();
+          } catch (err) {
+            console.warn(
+              "Vehicle-specific products not found, loading full catalog",
+              err,
+            );
+            toast.info(
+              "Vehicle-specific products not found, loading full catalog",
+            );
+          }
+        }
+
+        // Fallback to full catalog if no vehicle-specific data
+        if (data.length === 0) {
+          const res = await fetch("/api/products");
+          if (!res.ok) throw new Error("Local products fetch failed");
+          data = await res.json();
+        }
+
+        // Set products state
+        setProducts(data);
+      } catch (err) {
+        console.error("Failed to load products:", err);
+        toast.error("Failed to load products");
+        setProducts([]);
+      }
+    };
+
+    fetchProducts();
+  }, [vehicle]);
+
+  const addItem = useCallback((product: Product, quantity = 1) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === productId);
-      if (existing) {
+      const existing = prev.find((i) => i.productId === product.id);
+      if (existing)
         return prev.map((i) =>
-          i.productId === productId
+          i.productId === product.id
             ? { ...i, quantity: i.quantity + quantity }
             : i,
         );
-      }
-      return [...prev, { productId, quantity }];
+      return [...prev, { productId: product.id, quantity, product }];
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
-  }, []);
-
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setItems((prev) => prev.filter((i) => i.productId !== productId));
-      return;
-    }
-    setItems((prev) =>
-      prev.map((i) => (i.productId === productId ? { ...i, quantity } : i)),
-    );
-  }, []);
-
+  const removeItem = useCallback(
+    (productId: string) =>
+      setItems((prev) => prev.filter((i) => i.productId !== productId)),
+    [],
+  );
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number) => {
+      if (quantity <= 0) return removeItem(productId);
+      setItems((prev) =>
+        prev.map((i) => (i.productId === productId ? { ...i, quantity } : i)),
+      );
+    },
+    [removeItem],
+  );
   const clearCart = useCallback(() => setItems([]), []);
-
-  const getTotal = useCallback(() => {
-    return items.reduce((sum, item) => {
-      const product = products.find((p) => p.id === item.productId);
-      return sum + (product?.price ?? 0) * item.quantity;
-    }, 0);
-  }, [items, products]);
-
-  const getItemCount = useCallback(() => {
-    return items.reduce((sum, item) => sum + item.quantity, 0);
-  }, [items]);
+  const getTotal = useCallback(
+    () =>
+      items.reduce(
+        (sum, item) => sum + (item.product?.price ?? 0) * item.quantity,
+        0,
+      ),
+    [items],
+  );
+  const getItemCount = useCallback(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items],
+  );
 
   return (
     <CartContext.Provider
@@ -374,12 +383,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getTotal,
         getItemCount,
+        products,
+        vehicle,
+        setVehicle,
       }}
     >
       {children}
     </CartContext.Provider>
   );
 }
+
+// ─── HOOKS ────────────────────────────────────────────────────────────────
 
 export function useAuth() {
   const ctx = useContext(AuthContext);

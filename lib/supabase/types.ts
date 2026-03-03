@@ -231,6 +231,7 @@ export type Role = User["role"];
 
 // Cart (client-only, not in DB)
 export interface CartItem {
+  product: any;
   productId: string;
   quantity: number;
 }
