@@ -1,18 +1,26 @@
-import Link from "next/link"
-import { ArrowRight, Droplets, Disc, Cpu, RotateCcw, Settings2, Thermometer } from "lucide-react"
-import { getServices, formatPrice } from "@/lib/data"
+import Link from "next/link";
+import {
+  ArrowRight,
+  Droplets,
+  Disc,
+  Cpu,
+  RotateCcw,
+  Settings2,
+  Thermometer,
+} from "lucide-react";
+import { getServices, formatPrice } from "@/lib/data";
 
 const iconMap: Record<string, React.ElementType> = {
-  "Oil Change": Droplets,
-  "Brake Service": Disc,
-  "Engine Diagnostics": Cpu,
-  "Tire Rotation & Balance": RotateCcw,
-  "Transmission Service": Settings2,
-  "AC Service & Repair": Thermometer,
-}
+  "Changement D'huile": Droplets,
+  "Service de Frein": Disc,
+  "Diagnostic du Moteur": Cpu,
+  "Rotation et Équilibrage des Pneus": RotateCcw,
+  "Service de Transmission": Settings2,
+  "Service et Réparation de l'Air Conditionné": Thermometer,
+};
 
 export async function ServicesPreview() {
-  const services = await getServices()
+  const services = await getServices();
 
   return (
     <section className="bg-background py-20">
@@ -20,23 +28,23 @@ export async function ServicesPreview() {
         <div className="mb-12 flex items-end justify-between">
           <div>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-foreground">
-              Our Services
+              Nos Services
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Expert repair and maintenance for all makes and models
+              Réparation et entretien experts pour tous les marques et modèles
             </p>
           </div>
           <Link
             href="/services"
             className="hidden items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80 md:flex"
           >
-            View All Services
+            Voir tous les services
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => {
-            const Icon = iconMap[service.name] || Settings2
+            const Icon = iconMap[service.name] || Settings2;
             return (
               <Link
                 key={service.id}
@@ -54,14 +62,14 @@ export async function ServicesPreview() {
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-primary">
-                    From {formatPrice(service.base_price)}
+                    À partir de {formatPrice(service.base_price)}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     ~{service.duration_minutes} min
                   </span>
                 </div>
               </Link>
-            )
+            );
           })}
         </div>
         <div className="mt-8 text-center md:hidden">
@@ -75,5 +83,5 @@ export async function ServicesPreview() {
         </div>
       </div>
     </section>
-  )
+  );
 }

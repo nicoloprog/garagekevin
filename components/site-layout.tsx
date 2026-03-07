@@ -53,7 +53,7 @@ export function SiteHeader() {
             <Wrench className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold tracking-tight text-foreground">
-            RemorquageKD
+            Remorquage
           </span>
         </Link>
 

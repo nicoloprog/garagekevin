@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ArrowRight, ShoppingCart } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { getFeaturedProducts, formatPrice, type Product } from "@/lib/data"
-import { useCart } from "@/lib/store"
-import { toast } from "sonner"
-import { useState, useEffect } from "react"
+import Link from "next/link";
+import { ArrowRight, ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getFeaturedProducts, formatPrice, type Product } from "@/lib/data";
+import { useCart } from "@/lib/store";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 export function FeaturedProducts() {
-  const [featured, setFeatured] = useState<Product[]>([])
-  const { addItem } = useCart()
+  const [featured, setFeatured] = useState<Product[]>([]);
+  const { addItem } = useCart();
 
   useEffect(() => {
     getFeaturedProducts(4)
       .then(setFeatured)
-      .catch(() => toast.error("Failed to load products"))
-  }, [])
+      .catch(() => toast.error("Failed to load products"));
+  }, []);
 
   return (
     <section className="border-t border-border bg-card py-20">
@@ -24,24 +24,27 @@ export function FeaturedProducts() {
         <div className="mb-12 flex items-end justify-between">
           <div>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-foreground">
-              Popular Parts
+              Pieces en Vedette
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Quality auto parts at competitive prices
+              Des pièces de qualité pour tous les besoins de réparation
             </p>
           </div>
           <Link
             href="/shop"
             className="hidden items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80 md:flex"
           >
-            Browse All Parts
+            Parcourir les pièces
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {featured.length === 0
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-64 animate-pulse rounded-lg border border-border bg-card" />
+                <div
+                  key={i}
+                  className="h-64 animate-pulse rounded-lg border border-border bg-card"
+                />
               ))
             : featured.map((product) => (
                 <div
@@ -54,7 +57,9 @@ export function FeaturedProducts() {
                   <span className="mb-1 text-xs font-medium uppercase tracking-wider text-primary">
                     {product.category}
                   </span>
-                  <h3 className="mb-1 font-medium text-foreground">{product.name}</h3>
+                  <h3 className="mb-1 font-medium text-foreground">
+                    {product.name}
+                  </h3>
                   <p className="mb-4 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
                     {product.description}
                   </p>
@@ -65,8 +70,8 @@ export function FeaturedProducts() {
                     <Button
                       size="sm"
                       onClick={() => {
-                        addItem(product.id)
-                        toast.success(`${product.name} added to cart`)
+                        addItem(product.id);
+                        toast.success(`${product.name} added to cart`);
                       }}
                       className="bg-primary text-primary-foreground hover:bg-primary/90"
                     >
@@ -87,5 +92,5 @@ export function FeaturedProducts() {
         </div>
       </div>
     </section>
-  )
+  );
 }
