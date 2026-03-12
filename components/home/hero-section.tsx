@@ -10,11 +10,10 @@ export function HeroSection() {
         <div className="max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Service 7 jours sur 7 - Prise de rendez-vous en ligne disponible
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Prise de rendez-vous en ligne disponible
           </div>
           <h1 className="text-balance font-[family-name:var(--font-heading)] text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Precision de réparation.{" "}
+            Précision de réparation.{" "}
             <span className="text-primary">Pieces Haute gamme</span>
           </h1>
           <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">

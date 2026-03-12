@@ -179,3 +179,121 @@ create policy "Users can insert own order items" on public.order_items for inser
 create policy "Admins can view all order items" on public.order_items for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'ADMIN')
 );
+-- ============================================================
+--  AutoParts DB Schema
+--  Tables: vehicle_cache · autocare_vehicle_mapping · parts_cache
+-- ============================================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- -----------------------------------------------------------
+-- 1. vehicle_cache
+--    Stores merged NHTSA + CarQuery enrichment per VIN.
+-- -----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS vehicle_cache (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  vin             VARCHAR(17) UNIQUE NOT NULL,
+
+  -- NHTSA core fields
+  nhtsa_make          TEXT,
+  nhtsa_model         TEXT,
+  nhtsa_year          TEXT,
+  nhtsa_manufacturer  TEXT,
+  nhtsa_body_class    TEXT,
+  nhtsa_engine_model  TEXT,
+  nhtsa_fuel_type     TEXT,
+  nhtsa_trim          TEXT,
+  nhtsa_raw           JSONB,            -- full NHTSA response
+
+  -- CarQuery enrichment fields
+  cq_make_id          TEXT,
+  cq_model_id         TEXT,
+  cq_trim_id          TEXT,
+  cq_body             TEXT,
+  cq_doors            TEXT,
+  cq_cylinders        TEXT,
+  cq_displacement     TEXT,             -- e.g. "5000" (cc)
+  cq_horsepower       TEXT,
+  cq_torque           TEXT,
+  cq_fuel             TEXT,
+  cq_drive            TEXT,             -- FWD / RWD / AWD / 4WD
+  cq_transmission     TEXT,
+  cq_weight           TEXT,
+  cq_raw              JSONB,            -- full CarQuery trim object
+
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_vehicle_cache_vin ON vehicle_cache (vin);
+CREATE INDEX idx_vehicle_cache_make_model_year
+  ON vehicle_cache (nhtsa_make, nhtsa_model, nhtsa_year);
+
+-- -----------------------------------------------------------
+-- 2. autocare_vehicle_mapping
+--    Maps our internal vehicle_id → AutoCare's BaseVehicleId
+--    so we never look up the same car twice.
+-- -----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS autocare_vehicle_mapping (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  vehicle_cache_id      UUID REFERENCES vehicle_cache (id) ON DELETE CASCADE,
+
+  -- AutoCare identifiers (ACES standard)
+  autocare_base_vehicle_id   INTEGER,
+  autocare_make_id           INTEGER,
+  autocare_model_id          INTEGER,
+  autocare_year              INTEGER,
+  autocare_sub_model_id      INTEGER,
+  autocare_region            TEXT DEFAULT 'US',
+
+  -- optional engine qualifier
+  autocare_engine_id         INTEGER,
+  autocare_engine_desc       TEXT,
+
+  raw_response   JSONB,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE (vehicle_cache_id)
+);
+
+CREATE INDEX idx_ac_mapping_base_vehicle
+  ON autocare_vehicle_mapping (autocare_base_vehicle_id);
+
+-- -----------------------------------------------------------
+-- 3. parts_cache
+--    Caches AutoCare parts search results per vehicle + query.
+-- -----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS parts_cache (
+  id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  autocare_base_vehicle_id  INTEGER NOT NULL,
+  part_type_id              INTEGER,            -- AutoCare PartType ID
+  search_term               TEXT,               -- optional keyword
+  cache_key                 TEXT UNIQUE,        -- hash(vehicle_id + part_type + term)
+
+  -- Denormalized part fields for quick display
+  parts_data   JSONB NOT NULL,                  -- array of part objects
+  total_count  INTEGER DEFAULT 0,
+
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  expires_at   TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '24 hours')
+);
+
+CREATE INDEX idx_parts_cache_vehicle
+  ON parts_cache (autocare_base_vehicle_id, part_type_id);
+CREATE INDEX idx_parts_cache_expires
+  ON parts_cache (expires_at);
+
+-- -----------------------------------------------------------
+-- Helper: auto-update updated_at on vehicle_cache
+-- -----------------------------------------------------------
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_vehicle_cache_updated_at
+  BEFORE UPDATE ON vehicle_cache
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
